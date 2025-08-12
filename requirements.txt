@@ -3,7 +3,6 @@ pandas
 plotly
 numpy
 openai
-tabulate
 pypdf
 python-docx
 openpyxl
