@@ -1,37 +1,25 @@
-# This pipeline builds the Python project and publishes it as a deployable artifact.
-# It's triggered automatically when you push to the 'master' branch.
+# .github/workflows/your-workflow-file.yml
 
-trigger:
-- master # Change to 'main' if that is your default branch
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    # ... other steps like checkout and build ...
 
-pool:
-  vmImage: 'ubuntu-latest'
+    - name: 'Set Azure App Settings'
+      uses: azure/cli@v1
+      with:
+        inlineScript: |
+          az webapp config appsettings set --resource-group <Your-Resource-Group> --name cts-vibeappau3614-1 --settings "SOME_SETTING=some_value"
+          # Any other management commands would go here
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.11' # Should match the Python version of your App Service
-  displayName: 'Use Python 3.11'
+    - name: 'Wait for App Service to restart'
+      run: sleep 60 # Waits for 60 seconds to allow the SCM container to stabilize
 
-- script: |
-    python -m venv antenv
-    source antenv/bin/activate
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies from requirements.txt'
+    - name: 'Deploy to Azure Web App'
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'cts-vibeappau3614-1'
+        package: '.' # or the path to your deployment package
+        # ... other parameters
 
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-    replaceExistingArchive: true
-  displayName: 'Archive application files'
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
-  displayName: 'Publish artifact for release'
